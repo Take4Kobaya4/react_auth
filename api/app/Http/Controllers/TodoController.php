@@ -13,7 +13,7 @@ class TodoController extends Controller
      */
     public function index()
     {
-        $todos = Todo::all();
+        $todos = Todo::with('user')->latest()->get();
         return response()->json($todos);
     }
 
@@ -28,9 +28,9 @@ class TodoController extends Controller
             'is_completed' => 'boolean',
         ]);
 
-        if($request->user_id === Auth::id()) {
-            $todo = Todo::create($request->all());
-        }
+        $todo = $request->user()->todos()->create(
+            $request->only('title', 'description')
+        );
         return response()->json([
             'message' => 'Todo created successfully',
             'todo' => $todo
@@ -40,18 +40,17 @@ class TodoController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show(Todo $todo)
     {
-        $todo = Todo::findOrFail($id);
         return response()->json($todo);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, Todo $todo)
     {
-        $todo = Todo::findOrFail($id);
+
         if($todo->user_id !== Auth::id()) {
             return response()->json([
                 'message' => 'Unauthorized'
@@ -62,7 +61,7 @@ class TodoController extends Controller
             'description' => 'nullable|string',
             'is_completed' => 'sometimes|boolean',
         ]);
-        $todo->update($request->all());
+        $todo->update($request->only('title', 'description', 'is_completed'));
         return response()->json([
             'message' => 'Todo updated successfully',
             'todo' => $todo
@@ -72,9 +71,8 @@ class TodoController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(Todo $todo)
     {
-        $todo = Todo::findOrFail($id);
         // ログイン中のユーザーのTodoのみ削除可能
         if($todo->user_id !== Auth::id()) {
             return response()->json([
