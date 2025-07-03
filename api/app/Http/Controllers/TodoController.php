@@ -5,15 +5,23 @@ namespace App\Http\Controllers;
 use App\Models\Todo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 
 class TodoController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $todos = Todo::with('user')->latest()->get();
+        $query = Todo::query();
+        
+        if ($request->has('search')) {
+            $query->where('title', 'like', '%' . $request->input('search') . '%');
+        }
+
+        $todos = $query->latest()->get();
+
         return response()->json($todos);
     }
 
@@ -24,12 +32,11 @@ class TodoController extends Controller
     {
         $request->validate([
             'title' => 'required|string',
-            'description' => 'nullable|string',
-            'is_completed' => 'boolean',
+            'content' => 'nullable|string',
         ]);
 
         $todo = $request->user()->todos()->create(
-            $request->only('title', 'description')
+            $request->only('title', 'content')
         );
         return response()->json([
             'message' => 'Todo created successfully',
@@ -50,18 +57,13 @@ class TodoController extends Controller
      */
     public function update(Request $request, Todo $todo)
     {
+        Gate::authorize('update-todo', $todo);
 
-        if($todo->user_id !== Auth::id()) {
-            return response()->json([
-                'message' => 'Unauthorized'
-            ], 403);
-        }
         $request->validate([
             'title' => 'sometimes|string',
-            'description' => 'nullable|string',
-            'is_completed' => 'sometimes|boolean',
+            'content' => 'nullable|string',
         ]);
-        $todo->update($request->only('title', 'description', 'is_completed'));
+        $todo->update($request->only('title', 'content'));
         return response()->json([
             'message' => 'Todo updated successfully',
             'todo' => $todo
@@ -73,12 +75,8 @@ class TodoController extends Controller
      */
     public function destroy(Todo $todo)
     {
-        // ログイン中のユーザーのTodoのみ削除可能
-        if($todo->user_id !== Auth::id()) {
-            return response()->json([
-                'message' => 'Unauthorized'
-            ], 403);
-        }
+        Gate::authorize('delete-todo', $todo);
+
         $todo->delete();
         return response()->json([
             'message' => 'Todo deleted successfully'

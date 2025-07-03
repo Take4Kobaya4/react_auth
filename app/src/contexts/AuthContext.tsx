@@ -1,100 +1,72 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { createContext, useState, type ReactNode, useEffect } from "react";
-import type { User } from "../types/auth";
+import { createContext, useEffect, useState, type ReactNode } from "react";
+import { type User } from "../types/auth";
 import { authApi } from "../apis/auth";
 
 interface AuthContextType {
-    user: User | null;
-    isLoading: boolean;
-    error: string | null;
-    login: (email: string, password: string) => Promise<void>;
-    register: (name: string, email: string, password: string) => Promise<void>;
-    logout: () => Promise<void>;
+  user: User | null;
+  loading: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  register: (name: string, email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export { AuthContext };
 
-interface AuthProviderProps {
-    children: ReactNode;
-}
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
-export default function AuthProvider({children}: AuthProviderProps) {
-    const [ user, setUser ] = useState<User | null>(null);
-    const [ isLoading, setIsLoading ] = useState(true);
-    const [ error, setError ] = useState<string | null>(null);
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const userData = await authApi.getUser();
+        setUser(userData);
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    // 認証チェック
-    useEffect(() => {
-        const checkAuth = async () => {
-            setIsLoading(true);
-            setError(null)
-            try {
-                const userData = await authApi.getUser();
-                setUser(userData);
-            } catch (error) {
-                console.error("Failed to fetch user data:", error);
-                setError('認証情報の取得に失敗しました');
-                setUser(null);
-                localStorage.removeItem('auth_token');
-            } finally {
-                setIsLoading(false);
-            }
-        }
-        checkAuth();
-    }, []);
+    checkAuth();
+  }, []);
 
-    const login = async (email: string, password: string): Promise<void> => {
-        setIsLoading(true);
-        setError(null);
-        try {
-            const userData = await authApi.login(email, password);
-            setUser(userData);
-        } catch(error: any) {
-            const errorMessage = error.response?.data?.message || 'ログインに失敗しました';
-            setError(errorMessage);
-            throw error;
-        } finally {
-            setIsLoading(false);
-        }
+  const login = async (email: string, password: string): Promise<void> => {
+    try {
+      const userData = await authApi.login(email, password);
+      setUser(userData);
+    } catch (error) {
+      console.error("Login failed:", error);
+      throw error; // Re-throw the error to handle it in the component
     }
+  }
 
-    const register = async (name: string, email: string, password: string): Promise<void> => {
-        setIsLoading(true);
-        setError(null);
-        try {
-            const userData = await authApi.register(name, email, password);
-            setUser(userData);
-        } catch (error: any) {
-            const errorMessage = error.response?.data?.message || '登録に失敗しました';
-            setError(errorMessage);
-            throw error;
-        } finally {
-            setIsLoading(false);
-        }
+  const register = async (name: string, email: string, password: string): Promise<void> => {
+    try {
+      const userData = await authApi.register(name, email, password);
+      setUser(userData);
+    } catch (error) {
+      console.error("Registration failed:", error);
+      throw error; // Re-throw the error to handle it in the component
     }
+  }
 
-    const logout = async (): Promise<void> => {
-        setIsLoading(true);
-        setError(null);
-        try {
-            await authApi.logout();
-            setUser(null);
-        } catch (error: any) {
-            const errorMessage = error.response?.data?.message || 'ログアウトに失敗しました';
-            setError(errorMessage);
-            throw error;
-        } finally {
-            setIsLoading(false);
-        }
+  const logout = async (): Promise<void> => {
+    try {
+      await authApi.logout();
+      setUser(null);
+    } catch (error) {
+      console.error("Logout failed:", error);
+      throw error; // Re-throw the error to handle it in the component
     }
+  }
 
-    const value = { user, isLoading, error, login, register, logout };
-
-    return (
-        <AuthContext.Provider value={value}>
-            {children}
-        </AuthContext.Provider>
-    );
-}
+  return (
+    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
