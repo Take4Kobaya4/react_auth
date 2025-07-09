@@ -16,11 +16,3 @@ export interface TodoUpdateData {
     content?: string;
     is_completed?: boolean;
 }
-
-export interface TodoListResponse {
-    data: Todo[]
-}
-
-export interface TodoResponse {
-    data: Todo;
-}

@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Todo;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 
 class TodoController extends Controller
@@ -12,16 +11,9 @@ class TodoController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request)
+    public function index()
     {
-        $query = Todo::query();
-        
-        if ($request->has('search')) {
-            $query->where('title', 'like', '%' . $request->input('search') . '%');
-        }
-
-        $todos = $query->latest()->get();
-
+        $todos = Todo::all();
         return response()->json($todos);
     }
 
@@ -62,8 +54,9 @@ class TodoController extends Controller
         $request->validate([
             'title' => 'sometimes|string',
             'content' => 'nullable|string',
+            'is_completed' => 'nullable|boolean',
         ]);
-        $todo->update($request->only('title', 'content'));
+        $todo->update($request->only('title', 'content', 'is_completed'));
         return response()->json([
             'message' => 'Todo updated successfully',
             'todo' => $todo

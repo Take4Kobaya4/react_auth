@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router";
 import { AuthProvider } from "./contexts/AuthContext";
 import TodoListPage from "./pages/TodoListPage";
 import TodoDetailPage from "./pages/TodoDetailPage";
@@ -23,7 +23,7 @@ const theme = createTheme({
 const ProtectedRoute = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
   // If user is not authenticated, redirect to login page（ユーザーが認証されていない：ログインへリダイレクト）
-  return !user ? <>{children}</> : <Navigate to="/todos" replace />;
+  return !user ?  <>{children}</>: <Navigate to="/login" replace />;
 };
 
 function App() {
