@@ -1,23 +1,18 @@
 export interface Todo {
     id:number;
     title: string;
-    description: string;
+    content: string;
     is_completed: boolean;
     user_id: number;
 }
 
-export interface CreateTodoFormData {
+export interface TodoCreateData {
     title: string;
-    description?: string;
-    is_completed?: boolean;
+    content?: string;
 }
 
-export interface UpdateTodoFormData {
+export interface TodoUpdateData {
     title?: string;
-    description?: string;
+    content?: string;
     is_completed?: boolean;
-}
-
-export interface TodoListResponse {
-    data: Todo[]
 }
